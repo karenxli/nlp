@@ -2,6 +2,7 @@
 from lib2to3.pgen2.tokenize import tokenize
 import sys
 import math
+import re
 import collections
 
 """
@@ -67,10 +68,11 @@ class LanguageModel:
         if self.unigram_frequencies[num] == 1:
             unknowns.append(num)
     for word in unknowns:
+        word = " " + word + " "
         self.corpus = [t.replace(word, self.UNK) for t in self.corpus]
         del self.unigram_frequencies[word]
     self.count(self.corpus)
-    #print(text)
+    #print(self.corpus)
     #print(self.unigram_frequencies)
 
 
