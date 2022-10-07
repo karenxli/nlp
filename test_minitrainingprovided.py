@@ -36,6 +36,10 @@ class TestMiniTraining(unittest.TestCase):
     # ((1) / (11))
     self.assertAlmostEqual(1 / 11, lm.score("flamingo"), places=3, msg="tests probability of flamingo, trained on unknowns_mixed.txt")
 
+  def test_bigramunknowns(self):
+    lm = LanguageModel(2, False)
+    print(lm.bigram("training_files/unknowns_mixed.txt"))
+
   
 
 if __name__ == "__main__":

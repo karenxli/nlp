@@ -31,20 +31,22 @@ class LanguageModel:
     self.gramCount= n_gram                              # type of n_gram
     self.smooth = is_laplace_smoothing                  # laplace smoothing?
     self.unigram_frequencies = collections.Counter()    # unigram frequencies
-    self.corpus_length = 0
+    self.corpus = []                                    # the unigrams themselves
 
   # populates the frequency list per article
   def count(self, article):
-    for word in article:
-        self.unigram_frequencies[word] = self.unigram_frequencies.get(word, 0) + 1
 
+    frequency = collections.Counter()
+    for word in article:
+        frequency[word] = frequency.get(word, 0) + 1
+        #self.unigram_frequencies[word] = self.unigram_frequencies.get(word, 0) + 1
+    return frequency
   # tokenizes a given txt file
   def splitText(self, training_file_path):
     f = open(training_file_path, "r")
     text = f.read().split()
     f.close()
     return text
-
 
  # calculates the probabilities of all elements in a single sentence
  # returns a list of that sentence's probabilities
@@ -56,12 +58,21 @@ class LanguageModel:
 
     prob = []
     for word in sentence:
-        if(self.unigram_frequencies[word] == 0 
-            & self.unigram_frequencies[self.UNK] > 0):
+        if(self.corpus.count(word) == 0 
+            and self.unigram_frequencies[self.UNK] > 0):
                 prob.append(self.unigram_frequencies[self.UNK]/count)
         else: 
             prob.append(self.unigram_frequencies[word]/count)
     return prob
+
+
+  # creates ngrams
+  def ngramMaker(self, training_file_path, gramCount):
+    text = self.splitText(training_file_path) #tokenizes
+ 
+    ngrams = zip(*[text[i:] for i in range(gramCount)])
+    return [" ".join(ngram) for ngram in ngrams]
+
 
   def train(self, training_file_path):
     """Trains the language model on the given data. Assumes that the given data
@@ -74,23 +85,20 @@ class LanguageModel:
     None
     """
     self.corpus = self.splitText(training_file_path) #tokenizes
-    self.count(self.corpus) # does an initial count of all words
-    
+    uncleaned = self.count(self.corpus) # does an initial count of all words
+
+    # FIX THIS BIT
+    self.corpus = self.ngramMaker(training_file_path, self.gramCount)
     unknowns = []
-    for num in self.unigram_frequencies: # finds all the single words 
-        if self.unigram_frequencies[num] == 1:
+    for num in uncleaned: # finds all the single words 
+        if uncleaned[num] == 1:
             unknowns.append(num)
     
     for word in unknowns:
-        word = " " + word + " "
         self.corpus = [t.replace(word, self.UNK) for t in self.corpus]
-        del self.unigram_frequencies[word]
-    #self.count(self.corpus)
+        #del self.unigram_frequencies[word]
+    self.unigram_frequencies = self.count(self.corpus)
 
-    # it's not doing the replacement correctly
-    print(unknowns)
-    print(self.corpus)
-    print(self.unigram_frequencies)
 
 
   def score(self, sentence):
