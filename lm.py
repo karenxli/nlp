@@ -51,26 +51,36 @@ class LanguageModel:
  # calculates the probabilities of all elements in a single sentence
  # returns a list of that sentence's probabilities
   def probability(self, sentence):
-    count = 0
+    denominator = 0
     for m in self.unigram_frequencies:
-        count = count + self.unigram_frequencies[m]
+        denominator = denominator + self.unigram_frequencies[m]
+    if(self.smooth):
+      denominator = denominator + len(self.unigram_frequencies)
+    print(denominator)
+
     #count is now the total of all values - make this a general constant?
 
     prob = []
     for word in sentence:
         if(self.corpus.count(word) == 0 
             and self.unigram_frequencies[self.UNK] > 0):
-                prob.append(self.unigram_frequencies[self.UNK]/count)
+                numerator = self.unigram_frequencies[self.UNK]
+                if(self.smooth):
+                  numerator = numerator + 1 # laplace smoothing
+                prob.append(numerator/denominator)
         else: 
-            prob.append(self.unigram_frequencies[word]/count)
+            numerator = self.unigram_frequencies[word]
+            if(self.smooth):
+                  numerator = numerator + 1
+            prob.append(numerator/denominator)
     return prob
 
 
+
   # creates ngrams
-  def ngramMaker(self, training_file_path, gramCount):
-    text = self.splitText(training_file_path) #tokenizes
+  def ngramMaker(self, splittedText, gramCount):
  
-    ngrams = zip(*[text[i:] for i in range(gramCount)])
+    ngrams = zip(*[splittedText[i:] for i in range(gramCount)])
     return [" ".join(ngram) for ngram in ngrams]
 
 
@@ -84,11 +94,10 @@ class LanguageModel:
     Returns:
     None
     """
-    self.corpus = self.splitText(training_file_path) #tokenizes
-    uncleaned = self.count(self.corpus) # does an initial count of all words
 
-    # FIX THIS BIT
-    self.corpus = self.ngramMaker(training_file_path, self.gramCount)
+    # tokenize, count, change into unknowns, split, then count again
+    self.corpus = self.splitText(training_file_path)
+    uncleaned = self.count(self.corpus) # does an initial count of all words
     unknowns = []
     for num in uncleaned: # finds all the single words 
         if uncleaned[num] == 1:
@@ -96,9 +105,13 @@ class LanguageModel:
     
     for word in unknowns:
         self.corpus = [t.replace(word, self.UNK) for t in self.corpus]
-        #del self.unigram_frequencies[word]
-    self.unigram_frequencies = self.count(self.corpus)
 
+    # step 3 is done 
+    self.corpus = self.ngramMaker(self.corpus, self.gramCount)
+    self.unigram_frequencies = self.count(self.corpus)
+   
+    print(self.corpus)
+    print(self.unigram_frequencies)
 
 
   def score(self, sentence):
