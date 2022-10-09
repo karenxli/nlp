@@ -170,6 +170,7 @@ class LanguageModel:
     Returns:
       str: the generated sentence
     """
+    # returns a string
     pass
 
   def generate(self, n):
@@ -180,7 +181,10 @@ class LanguageModel:
     Returns:
       list: a list containing strings, one per generated sentence
     """
-    pass
+    paragraph = []
+    for i in range(n):
+      paragraph.append(self.generate_sentence())
+
     
 
 
