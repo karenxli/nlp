@@ -1,8 +1,8 @@
 # imports go here
 from lib2to3.pgen2.tokenize import tokenize
 import sys
-import math
-#import re
+import random
+import bisect
 import collections
 
 """
@@ -173,9 +173,50 @@ class LanguageModel:
     # returns a string
     sentence = ""
     if(self.gramCount == 1):
-      sentence = sentence + self.SENT_BEGIN
+      sentence = self.generate_unigram()
+
     else:
       pass
+    return sentence
+
+  def generate_unigram(self):
+    '''
+    get probabilities for the freq
+    sort them highest to lowest
+    change probabilities to be a full thing
+    send to gen sentence
+    '''
+
+    spectrum = self.unigram_frequencies.copy()
+    del spectrum[self.SENT_BEGIN]
+    denom = 0
+    for m in spectrum:
+        denom = denom + spectrum[m]
+    for word in spectrum:
+      spectrum[word] = spectrum[word]/denom
+
+    spectrum = spectrum.most_common()
+    spectrum = [list(spect) for spect in spectrum]
+
+    rolling_prob = 0
+    for word in spectrum:
+      word[1] += rolling_prob
+      rolling_prob = word[1] # reassign to the running total 
+
+    sentence = self.SENT_BEGIN
+    new_word = ""
+    while(new_word != self.SENT_END):
+      randNum = random.uniform(0, 1)
+      new_word = self.findInterval(spectrum, randNum)
+      
+      sentence += " " + new_word 
+    return sentence
+
+  # finds the word that the random value falls to
+  def findInterval(self, spect, val):
+
+    inter = bisect.bisect_left(list(dict(spect).values()), val)
+    return spect[inter][0]
 
   def generate(self, n):
     """Generates n sentences from a trained language model using the Shannon technique.
