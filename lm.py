@@ -2,7 +2,7 @@
 from lib2to3.pgen2.tokenize import tokenize
 import sys
 import math
-import re
+#import re
 import collections
 
 """
@@ -32,6 +32,7 @@ class LanguageModel:
     self.smooth = is_laplace_smoothing                  # laplace smoothing?
     self.unigram_frequencies = collections.Counter()    # unigram frequencies
     self.corpus = []                                    # the unigrams themselves
+    self.path = ""
 
   # populates the frequency list per article
   def count(self, article):
@@ -50,13 +51,18 @@ class LanguageModel:
 
  # calculates the probabilities of all elements in a single sentence
  # returns a list of that sentence's probabilities
-  def probability(self, sentence):
+  # gets number of unique tokens
+  def denom(self):
     denominator = 0
     for m in self.unigram_frequencies:
         denominator = denominator + self.unigram_frequencies[m]
     if(self.smooth):
       denominator = denominator + len(self.unigram_frequencies)
-    print(denominator)
+    #print(denominator)
+    return denominator
+
+  def uni_probability(self, sentence):
+    denominator = self.denom()
 
     #count is now the total of all values - make this a general constant?
 
@@ -75,8 +81,29 @@ class LanguageModel:
             prob.append(numerator/denominator)
     return prob
 
+  def biProbability(self, sentence):
+    prob = 1
+    previousWord = None
+    for word in sentence:
+      if previousWord != None:
+        bigramProb = self.biWord(previousWord, word)
+        prob = bigramProb * prob
+      previousWord = word
+    return prob
 
+  def biWord(self, prev, word):
+    temp_corpus = self.splitText(self.path)
+    smoothing = len(set(temp_corpus))
 
+    denominator = temp_corpus.count(prev)
+    numerator = self.unigram_frequencies[str(prev) + ' ' + str(word)]
+
+    if self.smooth:
+        numerator += 1
+        denominator = denominator + smoothing
+    return 0.0 if numerator == 0 or denominator == 0 else float(
+            numerator) / float(denominator)
+  
   # creates ngrams
   def ngramMaker(self, splittedText, gramCount):
  
@@ -96,6 +123,7 @@ class LanguageModel:
     """
 
     # tokenize, count, change into unknowns, split, then count again
+    self.path = training_file_path
     self.corpus = self.splitText(training_file_path)
     uncleaned = self.count(self.corpus) # does an initial count of all words
     unknowns = []
@@ -110,8 +138,8 @@ class LanguageModel:
     self.corpus = self.ngramMaker(self.corpus, self.gramCount)
     self.unigram_frequencies = self.count(self.corpus)
    
-    print(self.corpus)
-    print(self.unigram_frequencies)
+    #print(self.corpus)
+    #print(self.unigram_frequencies)
 
 
   def score(self, sentence):
@@ -125,13 +153,17 @@ class LanguageModel:
     sent_prob = 1
 
     sent_text = sentence.split()
-    total_prob = self.probability(sent_text)
+    if(self.gramCount == 1):
+      total_prob = self.uni_probability(sent_text)
+    else:
+      return self.biProbability(sent_text)
  
     for x in total_prob:
         sent_prob *= x
     return sent_prob
 
     # this score can be very very small
+
   def generate_sentence(self):
     """Generates a single sentence from a trained language model using the Shannon technique.
       

@@ -84,3 +84,26 @@ if __name__ == '__main__':
 
   main()
 
+
+
+ # bigram probability things
+  def biWordProbability(self, prev, word):
+
+    bigram_word_probability_numerator = self.bigram_frequencies.get((prev, word), 0)
+    bigram_word_probability_denominator = self.unigram_frequencies.get(prev, 0)
+    if self.smooth:
+        bigram_word_probability_numerator += 1
+        bigram_word_probability_denominator += self.unique__bigram_words
+    return 0.0 if bigram_word_probability_numerator == 0 or bigram_word_probability_denominator == 0 else float(
+            bigram_word_probability_numerator) / float(bigram_word_probability_denominator)
+
+  # putting it together in a sentence, bi probability things
+  def biSentenceProbability(self, sentence):
+        bigram_sentence_probability_log_sum = 0
+        previous_word = None
+        for word in sentence:
+            if previous_word != None:
+                bigram_word_probability = self.biWordProbability(previous_word, word)
+                bigram_sentence_probability_log_sum += math.log(bigram_word_probability, 2)
+            previous_word = word
+        return bigram_sentence_probability_log_sum
