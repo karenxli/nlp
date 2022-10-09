@@ -171,7 +171,11 @@ class LanguageModel:
       str: the generated sentence
     """
     # returns a string
-    pass
+    sentence = ""
+    if(self.gramCount == 1):
+      sentence = sentence + self.SENT_BEGIN
+    else:
+      pass
 
   def generate(self, n):
     """Generates n sentences from a trained language model using the Shannon technique.
@@ -184,6 +188,7 @@ class LanguageModel:
     paragraph = []
     for i in range(n):
       paragraph.append(self.generate_sentence())
+    return paragraph
 
     
 
