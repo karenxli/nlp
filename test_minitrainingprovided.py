@@ -19,12 +19,6 @@ class TestMiniTraining(unittest.TestCase):
     bigram = LanguageModel(2, True)
     self.assertEqual(1, 1, msg="tests constructor for 2, True")
 
-  def test_generateunigramconcludes(self):
-    lm = LanguageModel(1, True)
-    lm.train("training_files/iamsam2.txt")
-    sents = lm.generate(17)
-    self.assertEqual(17, len(sents), msg = "tests that you generated 2 sentences and that generate concluded")
-
   def test_unigramlaplace(self):
     lm = LanguageModel(1, True)
     lm.train("training_files/iamsam.txt")
@@ -45,6 +39,9 @@ class TestMiniTraining(unittest.TestCase):
     # (4 / 20) * (2 / 20) * (4 / 20)
     self.assertAlmostEqual(.004, lm.score("<s> ham </s>"), msg="tests probability of <s> ham </s>, trained on iamsam2.txt")
 
+  #def test_unigramberk(self):
+   # lm = LanguageModel(1, False)
+    #lm.train("training_files/berp-training.txt")
 
   def test_unigramunknowns(self):
     lm = LanguageModel(1, False)
@@ -57,7 +54,7 @@ class TestMiniTraining(unittest.TestCase):
     lm.train("training_files/unknowns_mixed.txt")
     # ((1 + 1) / (11 + 6))
     self.assertAlmostEqual(2 / 17, lm.score("flamingo"), places=3, msg="tests probability of flamingo, trained on unknowns_mixed.txt")
-  
+
   def test_bigramunknowns(self):
     lm = LanguageModel(2, False)
     lm.train("training_files/unknowns_mixed.txt")
@@ -86,6 +83,20 @@ class TestMiniTraining(unittest.TestCase):
     # ((2 + 1) / (4 + 6)) * ((4 + 1) / (4 + 6)) * ((2 + 1) / (4 + 6))
     self.assertAlmostEqual(.045, lm.score("<s> i am </s>"), msg="tests probability of <s> i am </s>, trained on iamsam2.txt")
 
+  def test_generatebigramconcludes(self):
+    lm = LanguageModel(2, True)
+    lm.train("training_files/iamsam2.txt")
+    sents = lm.generate(2)
+    self.assertEqual(2, len(sents), msg = "tests that you generated 2 sentences and that generate concluded")
+    print(sents)
+
+  def test_generateunigramconcludes(self):
+    lm = LanguageModel(1, True)
+    lm.train("training_files/iamsam2.txt")
+    sents = lm.generate(2)
+    self.assertEqual(2, len(sents), msg = "tests that you generated 2 sentences and that generate concluded")
+    print(sents)
+
   def test_onlyunknownsgenerationandscoring(self):
     lm = LanguageModel(1, True)
     lm.train("training_files/unknowns.txt")
@@ -103,6 +114,23 @@ class TestMiniTraining(unittest.TestCase):
     # (6 + 1) / (10 + 3)
     self.assertAlmostEqual(.5385, score, places=3, msg = "tests probability of porcupine, trained on unknowns.txt, unigrams")
 
+    # and then for bigrams
+    lm = LanguageModel(2, True)
+    lm.train("training_files/unknowns.txt")
+
+    # sentences should only contain unk tokens
+    sents = lm.generate(5)
+    for sent in sents:
+      words = sent.split()
+      if len(words) > 2:
+        for word in words[1:-1]:
+          self.assertEqual("<UNK>", word.upper(), msg = "tests that all middle words in generated sentences are <UNK>, bigrams")
+
+    # probability of unk should be v high
+    #score = lm.score("porcupine wombat")
+    # (4 + 1) / (6 + 3)
+    #self.assertAlmostEqual(.5555555, score, places=3, msg = "tests probability of porcupine wombat, trained on unknowns.txt, bigrams")
+    
 
 if __name__ == "__main__":
   unittest.main()

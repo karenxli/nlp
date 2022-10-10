@@ -40,7 +40,7 @@ class LanguageModel:
     frequency = collections.Counter()
     for word in article:
         frequency[word] = frequency.get(word, 0) + 1
-        #self.unigram_frequencies[word] = self.unigram_frequencies.get(word, 0) + 1
+        
     return frequency
   # tokenizes a given txt file
   def splitText(self, training_file_path):
@@ -49,27 +49,20 @@ class LanguageModel:
     f.close()
     return text
 
- # calculates the probabilities of all elements in a single sentence
- # returns a list of that sentence's probabilities
-  # gets number of unique tokens
-  def denom(self):
-    denominator = 0
-    for m in self.unigram_frequencies:
-        denominator = denominator + self.unigram_frequencies[m]
-    if(self.smooth):
-      denominator = denominator + len(self.unigram_frequencies)
-    #print(denominator)
-    return denominator
 
   def uni_probability(self, sentence):
-    denominator = self.denom()
+    if(self.smooth):
+      denominator = len(self.corpus) + len(set(self.corpus))
+    else:
+      denominator = len(self.corpus)
+    print(self.corpus)
 
     #count is now the total of all values - make this a general constant?
 
     prob = []
     for word in sentence:
         if(self.corpus.count(word) == 0 
-            and self.unigram_frequencies[self.UNK] > 0):
+            and self.unigram_frequencies[self.UNK] > 0): # if the word itself doesn't exist, use UNK values
                 numerator = self.unigram_frequencies[self.UNK]
                 if(self.smooth):
                   numerator = numerator + 1 # laplace smoothing
@@ -171,14 +164,15 @@ class LanguageModel:
       str: the generated sentence
     """
     # returns a string
-    sentence = ""
     if(self.gramCount == 1):
       sentence = self.generate_unigram()
-
     else:
-      pass
+      sentence = self.generate_bigram()
+
     return sentence
 
+
+  # generates a sentence for unigrams
   def generate_unigram(self):
     '''
     get probabilities for the freq
@@ -203,6 +197,7 @@ class LanguageModel:
       word[1] += rolling_prob
       rolling_prob = word[1] # reassign to the running total 
 
+
     sentence = self.SENT_BEGIN
     new_word = ""
     while(new_word != self.SENT_END):
@@ -212,11 +207,58 @@ class LanguageModel:
       sentence += " " + new_word 
     return sentence
 
+  # generates a sentence for
+  def generate_bigram(self):
+    '''
+    - for starting word: grab all unigrams with it
+    '''
+    sentence = self.SENT_BEGIN
+    prevWord = self.SENT_BEGIN
+    newWord = ""
+    spectrum = self.corpus.copy()
+
+    while(prevWord != self.SENT_END):
+      prevCorpus = []
+      for word in spectrum:
+        if(word.split()[0] == prevWord):
+          prevCorpus.append(word)
+
+      probability = self.probabilityFinder(prevCorpus)
+
+      randNum = random.uniform(0, 1)
+      newWord = self.findInterval(probability, randNum)
+
+      sentence += " " + newWord
+      prevWord = newWord
+
+
+    return sentence
+    
+  # does probability pre-processing for bigram models
+  def probabilityFinder(self, newCorp):
+    words = self.count(newCorp).most_common()
+    words = [list(spect) for spect in words]
+    denom = 0
+    for m in words:
+        denom = denom + m[1]
+    for word in words:
+      word[1] = word[1]/denom
+
+    rolling_prob = 0
+    for word in words:
+      word[1] += rolling_prob
+      rolling_prob = word[1] # reassign to the running total 
+    return words
+
   # finds the word that the random value falls to
   def findInterval(self, spect, val):
 
     inter = bisect.bisect_left(list(dict(spect).values()), val)
-    return spect[inter][0]
+    if(self.gramCount == 1):
+        return spect[inter][0]
+    else:
+      result = spect[inter][0].split()[1]
+      return result
 
   def generate(self, n):
     """Generates n sentences from a trained language model using the Shannon technique.
