@@ -1,10 +1,9 @@
 # imports go here
-from lib2to3.pgen2.tokenize import tokenize
-import sys
 import random
 import bisect
 import collections
-import operator as op
+import statistics as st
+
 
 """
 Karen Li
@@ -51,7 +50,7 @@ class LanguageModel:
     f.close()
     return text
 
-
+  # calculates the probability of a sentence using unigram model
   def uni_probability(self, sentence):
     if(self.smooth):
       denominator = len(self.corpus) + self.vocab
@@ -75,6 +74,7 @@ class LanguageModel:
             prob.append(numerator/denominator)
     return prob
 
+  # calculates the probability of a sentence using bigram model
   def biProbability(self, sentence):
     prob = 1
     previousWord = None
@@ -85,6 +85,7 @@ class LanguageModel:
       previousWord = word
     return prob
 
+ # calculates the probability of a word in a bigram model, given the previous word
   def biWord(self, prev, word):
     # probability is # of times the n-gram prev, word comes up
     # divided by the number of times an n-gram with prev shows up at all
@@ -140,8 +141,6 @@ class LanguageModel:
     self.corpus = self.ngramMaker(self.corpus, self.gramCount)
     self.unigram_frequencies = self.count(self.corpus)
    
-    #print(self.corpus)
-    #print(self.unigram_frequencies)
 
 
   def score(self, sentence):
@@ -166,6 +165,8 @@ class LanguageModel:
 
     # this score can be very very small
 
+  # generates an individual sentence based on an unigram or bigram model
+  # wrapper for generate_unigram and generate_bigram
   def generate_sentence(self):
     """Generates a single sentence from a trained language model using the Shannon technique.
       
@@ -216,7 +217,7 @@ class LanguageModel:
       sentence += " " + new_word 
     return sentence
 
-  # generates a sentence for
+  # generates a sentence for a bigram model
   def generate_bigram(self):
     '''
     - for starting word: grab all unigrams with it
@@ -235,7 +236,7 @@ class LanguageModel:
       probability = self.probabilityFinder(prevCorpus)
 
       randNum = random.uniform(0, 1)
-      newWord = self.findInterval(probability, randNum)
+      newWord = self.findInterval(probability, randNum) # random number generator
 
       sentence += " " + newWord
       prevWord = newWord
@@ -286,19 +287,54 @@ class LanguageModel:
 
 
 def main():
-  # TODO: implement
-  training_path = sys.argv[1]
-  testing_path1 = sys.argv[2]
-  testing_path2 = sys.argv[3]
+  # TODO: ngl i have no idea how this works and the deliverables just say "turn in your curated set of words"
+  #training_path = sys.argv[1]
+  #testing_path1 = sys.argv[2]
+  #testing_path2 = sys.argv[3]
   
-  pass
+
+  f = open("hw2-my-test.txt", "r")
+  whitman = [line.rstrip('\n') for line in f]
+  f.close()
+  
+  # Unigram model
+  print("Unigram model")
+  print("No of sentences: 50")
+  lm = LanguageModel(1, True)
+  lm.train("hw2-my-test.txt")
+  uniscores = []
+  for n in whitman:
+    uniscores.append(lm.score(n))
+  
+  print("Average probability = " + str(sum(uniscores)/len(uniscores)))
+  print("Standard deviation = " + str(st.stdev(uniscores)))
+  print("Sentences:")
+  print(lm.generate(50))
+
+  print(" ")
+
+  # Bigram model
+  print("Bigram model")
+  print("No of sentences: 50")
+  biscores = []
+  bi = LanguageModel(2, True)
+  bi.train("hw2-my-test.txt")
+  for a in whitman:
+    biscores.append(bi.score(a))
+
+  print("Average probability = " + str(sum(biscores)/len(biscores)))
+  print("Standard deviation = " + str(st.stdev(biscores)))
+  print("Sentences:")
+  print(bi.generate(50))
+
+  
 
     
 if __name__ == '__main__':
     
   # make sure that they've passed the correct number of command line arguments
-  if len(sys.argv) != 4:
-    print("Usage:", "python hw2_lm.py training_file.txt testingfile1.txt testingfile2.txt")
-    sys.exit(1)
+  #if len(sys.argv) != 4:
+  # print("Usage:", "python lm.py training_file.txt hw2-my-test.txt training_files/hw2-test.txt")
+  # sys.exit(1)
 
   main()
