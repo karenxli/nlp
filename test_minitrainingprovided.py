@@ -127,9 +127,9 @@ class TestMiniTraining(unittest.TestCase):
           self.assertEqual("<UNK>", word.upper(), msg = "tests that all middle words in generated sentences are <UNK>, bigrams")
 
     # probability of unk should be v high
-    #score = lm.score("porcupine wombat")
+    score = lm.score("porcupine wombat")
     # (4 + 1) / (6 + 3)
-    #self.assertAlmostEqual(.5555555, score, places=3, msg = "tests probability of porcupine wombat, trained on unknowns.txt, bigrams")
+    self.assertAlmostEqual(.5555555, score, places=3, msg = "tests probability of porcupine wombat, trained on unknowns.txt, bigrams")
     
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ import sys
 import random
 import bisect
 import collections
+import operator as op
 
 """
 Karen Li
@@ -33,6 +34,7 @@ class LanguageModel:
     self.unigram_frequencies = collections.Counter()    # unigram frequencies
     self.corpus = []                                    # the unigrams themselves
     self.path = ""
+    self.vocab = 0
 
   # populates the frequency list per article
   def count(self, article):
@@ -52,10 +54,9 @@ class LanguageModel:
 
   def uni_probability(self, sentence):
     if(self.smooth):
-      denominator = len(self.corpus) + len(set(self.corpus))
+      denominator = len(self.corpus) + self.vocab
     else:
       denominator = len(self.corpus)
-    print(self.corpus)
 
     #count is now the total of all values - make this a general constant?
 
@@ -85,15 +86,22 @@ class LanguageModel:
     return prob
 
   def biWord(self, prev, word):
-    temp_corpus = self.splitText(self.path)
-    smoothing = len(set(temp_corpus))
+    # probability is # of times the n-gram prev, word comes up
+    # divided by the number of times an n-gram with prev shows up at all
+    temp_corpus = self.corpus.copy()
 
-    denominator = temp_corpus.count(prev)
+    if(sum(prev in s for s in self.corpus) == 0) : prev = self.UNK
+    if(sum(word in s for s in self.corpus) == 0) : word = self.UNK
+
+    denominator = 0
+    for term in temp_corpus:
+      if(term.split()[0] == prev):
+        denominator += 1
     numerator = self.unigram_frequencies[str(prev) + ' ' + str(word)]
 
     if self.smooth:
         numerator += 1
-        denominator = denominator + smoothing
+        denominator += self.vocab
     return 0.0 if numerator == 0 or denominator == 0 else float(
             numerator) / float(denominator)
   
@@ -125,8 +133,9 @@ class LanguageModel:
             unknowns.append(num)
     
     for word in unknowns:
-        self.corpus = [t.replace(word, self.UNK) for t in self.corpus]
+        self.corpus = [self.UNK if word == item else item for item in self.corpus]
 
+    self.vocab = len(set(self.corpus))
     # step 3 is done 
     self.corpus = self.ngramMaker(self.corpus, self.gramCount)
     self.unigram_frequencies = self.count(self.corpus)
